@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 s(pherical) t(rigonometry) a(uto) l(earning) t(ool) 4(for) qgis.
 
 This is a tool for learning the Spherical Trigonometry as explained by I.Todhunter and J.G.Leathem in McMillan, London, 1914.
@@ -14,3 +15,9 @@ I hope I can be of help to someone; any advice, support or criticism is welcome.
 
 t.i.a., best regards,
 giuliano curti
+=======
+stalt4qgis
+==========
+
+A learning tool fo spherical trigonometry
+>>>>>>> efedd175178b231dfcf001d580313fc6c752541d
