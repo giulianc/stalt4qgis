@@ -81,8 +81,6 @@ gestione archi
 	controllo che ci siano almeno 2(+1) punti
 todhunter
 	Todhunter_22 convenzione lunghezza archi
-	Todhunter_26 simmetry of polarity (p.13)
-	Todhunter 27 supplemental triangles (p.13)
 	Todhunter 28 principle of duality (p.14)
 	Todhunter_29a a+c>c (p.14)
 	Todhunter_29b a>c-b (p.14)
@@ -849,6 +847,10 @@ class MainWindow(QtGui.QMainWindow):
 		tmp.triggered.connect(self.greatCircle2points)
 		mInsert.addAction(tmp)
 
+		tmp = QtGui.QAction(QtGui.QIcon(''),'Intersection of two great circle',self)        
+		tmp.triggered.connect(self.greatCircleIntersection)
+		mInsert.addAction(tmp)
+
 		tmp = QtGui.QAction(QtGui.QIcon(''),'Geodetic between 2 points',self)        
 		tmp.triggered.connect(self.geodetic2points)
 		mInsert.addAction(tmp)
@@ -991,13 +993,27 @@ class MainWindow(QtGui.QMainWindow):
 		tmp.triggered.connect(self.todhunter_025_polarTriangles)
 		mTodh.addAction(tmp)
 
-
-
-
-
-		tmp = QtGui.QAction(QtGui.QIcon(''),'Art. 27',self)        
-		tmp.triggered.connect(self.todhunter_027)
+		tmp = QtGui.QAction(QtGui.QIcon(''),'026 simmetry of polarity',self)        
+		tmp.triggered.connect(self.todhunter_026_simmetryOfPolarity)
 		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'027a supplemental triangles',self)        
+		tmp.triggered.connect(self.todhunter_027a_supplementalTriangles)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'027b supplemental triangles 2',self)        
+		tmp.triggered.connect(self.todhunter_027b_supplementalTriangles_2)
+		mTodh.addAction(tmp)
+
+
+
+
+
+
+
+
+
+
 
 		tmp = QtGui.QAction(QtGui.QIcon(''),'Art. 47',self)        
 		tmp.triggered.connect(self.todhunter_047)
@@ -1812,6 +1828,26 @@ class MainWindow(QtGui.QMainWindow):
 				a,b = tmp
 				self.circles['gc'+str(a)+str(b)] = ['gc',str(a),str(b)]
 #				self.redraw()
+			else:
+				print "errore: numero di parametri inadeguato"
+
+	def greatCircleIntersection(self):
+		"""
+			dialogo per il calcolo dell'intersezione
+			fra due great circles
+		"""
+		dlg = genericDlg('two great circles',['AB','CD'])
+		dlg.setValues(['',''])
+		dlg.show()
+		result = dlg.exec_()
+		if result:
+			tmp = dlg.getValues()
+			if len(tmp) == 2:
+				a,b = tmp
+				c1 = str('gc'+a)
+				c2 = str('gc'+b)
+				l = self.dbAddIntersection(c1,c2)
+				m = self.dbAddAntipodalPoint(l)
 			else:
 				print "errore: numero di parametri inadeguato"
 
@@ -2691,7 +2727,7 @@ Proof:
 		d = self.dbAddPointLatLon(lat,lon)
 		# great circle CD
 		self.circles['gc'+str(c)+str(d)] = ['gc',str(c),str(d)]
-		# intersection: valutare se completare il diamtero con l'antipodale
+		# intersection: valutare se completare il diametro con l'antipodale
 		c1 = 'gcAB'
 		c2 = 'gcCD'
 		l = self.dbAddIntersection(c1,c2)
@@ -3061,49 +3097,170 @@ BC, AC and AB, the triangles ABC and DEF are POLARS.
 		self.dbAddArc(str(c1),str(a1))
 		self.redraw()
 
-
-
-
-
-	def todhunter_027(self):
-		"""
-			polar triangles
-		"""
+	def todhunter_026_simmetryOfPolarity(self):
+		QtGui.QMessageBox.information(
+			self,
+			'026_simmetryOfPolarity',
+			'''
+Theorem:
+Let ABC a spherical triangle and DEF it's polar
+triangle, thus ABC is the polar triangle of DEF.
+Prof:
+D polar of BC imply DB and DC are quadrants,
+E polar of AC imply EA and EC are quadrants,
+F polar of AB imply FA and FB are quadrants,
+thus A is polar of EF, B of DF and C of DE.
+			'''
+		)
 		# pulisce tutto
 		self.dbClearAll()
 		# titolo
-		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 27, pag. 13'
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 26, pag. 13'
 		# genera il punto A
 		lat = sessad2rad(10.)
 		lon = sessad2rad(20.)
 		a = self.dbAddPointLatLon(lat,lon)
 		# genera il punto B
-		lat = sessad2rad(60.)
-		lon = sessad2rad(30.)
+		lat = sessad2rad(40.)
+		lon = sessad2rad(70.)
 		b = self.dbAddPointLatLon(lat,lon)
 		# genera il punto C
-		lat = sessad2rad(40.)
-		lon = sessad2rad(50.)
+		lat = sessad2rad(60.)
+		lon = sessad2rad(30.)
 		c = self.dbAddPointLatLon(lat,lon)
-		# triangolo primitivo
+		# polari
+		a1 = self.dbAddPolar('gc',b,c)
+		b1 = self.dbAddPolar('gc',a,c)
+		c1 = self.dbAddPolar('gc',a,b)
+		# genera il triangolo
 		self.dbAddArc(str(a),str(b))
 		self.dbAddArc(str(b),str(c))
 		self.dbAddArc(str(a),str(c))
-		# antipolari
-		xa,ya,za = self.points[a][1]
-		xb,yb,zb = self.points[b][1]
-		xc,yc,zc = self.points[c][1]
-		x,y,z = arcPolar(self.myRad,[xa,ya,za],[xb,yb,zb])
-		c1 = self.dbAddPointRect(-x,-y,-z)
-		x,y,z = arcPolar(self.myRad,[xb,yb,zb],[xc,yc,zc])
-		a1 = self.dbAddPointRect(-x,-y,-z)
-		x,y,z = arcPolar(self.myRad,[xc,yc,zc],[xa,ya,za])
-		b1 = self.dbAddPointRect(-x,-y,-z)
-		# triangolo antipolare
+		# polare
 		self.dbAddArc(str(a1),str(b1))
 		self.dbAddArc(str(b1),str(c1))
 		self.dbAddArc(str(c1),str(a1))
 		self.redraw()
+
+	def todhunter_027a_supplementalTriangles(self):
+		QtGui.QMessageBox.information(
+			self,
+			'027a_supplementalTriangles',
+			'''
+Theorem:
+Let ABC and DEF two polar triangle, the sides og
+one are supplemental of the angles of the other;
+the angles the supplemental of the sides.
+Prof:
+Let G and H the intersection of great circles BA
+and BC with great circle DF; DH and FG are by
+definition quadrant, thus DH + FG = DF + GH = 2pi;
+by the simmetry of polarity D is a pole of DF, thus
+the ar GH is equals to the angle in B, from wich
+DF = 2pi - GH = 2pi - B.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 26, pag. 13'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(40.)
+		lon = sessad2rad(70.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto C
+		lat = sessad2rad(60.)
+		lon = sessad2rad(30.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# polari
+		a1 = self.dbAddPolar('gc',b,c)
+		b1 = self.dbAddPolar('gc',a,c)
+		c1 = self.dbAddPolar('gc',a,b)
+		# genera il triangolo
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(a),str(c))
+		# polare
+		self.dbAddArc(str(a1),str(b1))
+		self.dbAddArc(str(b1),str(c1))
+		self.dbAddArc(str(a1),str(c1))
+		# great circles
+		typ = 'gc'
+		self.circles[typ+str(b)+str(a)] = [typ,b,a]
+		self.circles[typ+str(b)+str(c)] = [typ,b,c]
+		self.circles[typ+str(a1)+str(c1)] = [typ,a1,c1]
+		# intersezioni
+		c1 = 'gc'+a1+c1
+		c2 = 'gc'+b+a
+		l = self.dbAddIntersection(c1,c2)
+		c2 = 'gc'+b+c
+		m = self.dbAddIntersection(c1,c2)
+		# visualizza
+		self.redraw()
+
+	def todhunter_027b_supplementalTriangles_2(self):
+		QtGui.QMessageBox.information(
+			self,
+			'027b_supplementalTriangles_2',
+			'''
+Proposition:
+The sides (angles) of the polar triangle are equal
+or supplemental of the angles (sides) of the
+primitive triangle;
+Prof:
+
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 26, pag. 13'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(40.)
+		lon = sessad2rad(70.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto C
+		lat = sessad2rad(60.)
+		lon = sessad2rad(30.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# polari
+		a1 = self.dbAddPolar('gc',b,c)
+		b1 = self.dbAddPolar('gc',a,c)
+		c1 = self.dbAddPolar('gc',a,b)
+		# genera il triangolo
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(a),str(c))
+		# polare
+		self.dbAddArc(str(a1),str(b1))
+		self.dbAddArc(str(b1),str(c1))
+		self.dbAddArc(str(a1),str(c1))
+		# great circles
+		typ = 'gc'
+		self.circles[typ+str(a)+str(b)] = [typ,a,b]
+		self.circles[typ+str(a)+str(c)] = [typ,a,c]
+		self.circles[typ+str(b1)+str(c1)] = [typ,b1,c1]
+		# intersezioni
+		c1 = 'gc'+b1+c1
+		c2 = 'gc'+a+b
+		l = self.dbAddIntersection(c1,c2)
+		c2 = 'gc'+a+c
+		m = self.dbAddIntersection(c1,c2)
+		# visualizza
+		self.redraw()
+
+
+
+
+
 
 	def todhunter_047(self):
 		"""
@@ -3154,19 +3311,23 @@ BC, AC and AB, the triangles ABC and DEF are POLARS.
 
 
 
-#	def todhunter_025_polarTriangles(self):
+#	def todhunter_027b_supplementalTriangles(self):
 		QtGui.QMessageBox.information(
 			self,
-			'025_polarTriangles',
+			'027b_supplementalTriangles',
 			'''
-Let A, B, C three point and D, E, F poles respectively of
-BC, AC and AB, the triangles ABC and DEF are POLARS.
+Proposition:
+The sides (angles) of the polar triangle are equal
+or supplemental of the angles (sides) of the
+primitive triangle;
+Prof:
+
 			'''
 		)
 		# pulisce tutto
 		self.dbClearAll()
 		# titolo
-		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 25, pag. 12'
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 26, pag. 13'
 		# genera il punto A
 		lat = sessad2rad(10.)
 		lon = sessad2rad(20.)
@@ -3190,7 +3351,19 @@ BC, AC and AB, the triangles ABC and DEF are POLARS.
 		# polare
 		self.dbAddArc(str(a1),str(b1))
 		self.dbAddArc(str(b1),str(c1))
-		self.dbAddArc(str(c1),str(a1))
+		self.dbAddArc(str(a1),str(c1))
+		# great circles
+		typ = 'gc'
+		self.circles[typ+str(a)+str(b)] = [typ,a,b]
+		self.circles[typ+str(a)+str(c)] = [typ,a,c]
+		self.circles[typ+str(b1)+str(c1)] = [typ,b1,c1]
+		# intersezioni
+		c1 = 'gc'+b1+c1
+		c2 = 'gc'+a+b
+		l = self.dbAddIntersection(c1,c2)
+		c2 = 'gc'+a+c
+		m = self.dbAddIntersection(c1,c2)
+		# visualizza
 		self.redraw()
 
 

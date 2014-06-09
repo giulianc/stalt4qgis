@@ -11,7 +11,9 @@ Currently I have implemented the basic functions and propositions described by t
 
 I think, at the end of the path, to configure it as a plugin for QGIS in the hope god contribute to its spread in educational environment.
 
-I hope I can be of help to someone; any advice, support or criticism is welcome.
+I published a small presentation on http://www.slideshare.net/giulianc/spherical-trigonometry.
+
+I hope I can be of help to someone; any advice, support or criticism are welcome.
 
 t.i.a., best regards,
 giuliano curti
