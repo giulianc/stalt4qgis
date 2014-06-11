@@ -47,15 +47,16 @@ illustra un particolare algoritmo di trigonometria sferica
 ------------- to do --------------
 dbAddCircle()
 	usare ma fare attenzione che alcuni cerchi hanno 1 parametro ed altri due
+dbGetPointRectCds())
+	cambiare codice 'int' in 'int2c'
 vettori
+	attenzione: cambiata la chiave, ora è AB al posto di A,B
 	aggiungere i tipi
 		nor(mali)
 			da punto a vettore
 			a due vettori
 cancellazione punto
 	eliminare gli antipodali
-interfaccia
-	si potrebbe anche usare una tabella nelle cui righe collocare gli elementi
 valutare salvataggio/lettura di file
 editing
 	vertici
@@ -313,6 +314,58 @@ def normaleDaPuntoAPiano(p,a,b):
 		k,j = 0.,0.
 #	print 'k=',k,'j=',j
 	return k,j	
+
+def intersection3Dvectors(U,V):
+	"""
+		compute the intersection, if any, between
+		the 3D vectors U = A + ku and V = B + jv
+	"""
+	A,u = U
+	B,v = V
+	xa,ya,za = A
+	print 'A:',xa,ya,za
+	xb,yb,zb = B
+	print 'B:',xb,yb,zb
+	x1,y1,z1 = u
+	print 'u:',x1,y1,z1
+	x2,y2,z2 = v
+	print 'v:',x2,y2,z2
+	r = xa-xb
+	s = ya-yb
+	t = za-zb
+	print 'r:',r,'s:',s,'t:',t
+	# parametri
+	a,b,c = crossProduct(u,v)
+	print 'cross product',a,b,c
+	# condizione di esistenza
+	if r*a+s*b+t*c == 0:
+		k,j = 'na','na'
+		if a != 0:
+			j = (s*z1-t*y1)/a
+			k = (s*z2-t*y2)/a
+		elif b != 0:
+			j = (r*z1-t*x1)/b
+			k = (r*z2-t*x2)/b
+		elif c != 0:
+			j = (r*y1-s*x1)/c
+			k = (r*y2-s*x2)/c
+		else:
+			return -1
+		print 'k:',k,'j:',j
+		if k != 'na':
+			s1x,s1y,s1z = xa+k*x1,ya+k*y1,za+k*z1
+			print 'soluzione 1',s1x,s1y,s1z
+		if j != 'na':
+			s2x,s2y,s2z = xb+j*x2,yb+j*y2,zb+j*z2
+			print 'soluzione 2',s2x,s2y,s2z
+		if k != 'na':
+			return s1x,s1y,s1z
+		elif j != 'na':
+			return s2x,s2y,s2z
+		else:
+			return -1
+	else:
+		return -1
 
 def matRotation3D(axys,ang):
 	"""
@@ -835,6 +888,10 @@ class MainWindow(QtGui.QMainWindow):
 		tmp.triggered.connect(self.newVector)
 		mInsert.addAction(tmp)
 
+		tmp = QtGui.QAction(QtGui.QIcon(''),'Two vectors intersection',self)        
+		tmp.triggered.connect(self.twoVectorIntersection)
+		mInsert.addAction(tmp)
+
 		tmp = QtGui.QAction(QtGui.QIcon(''),'Normal from point to vector',self)        
 		tmp.triggered.connect(self.normalFromPtoV)
 		mInsert.addAction(tmp)
@@ -880,9 +937,11 @@ class MainWindow(QtGui.QMainWindow):
 		mInsert.addAction(tmp)
 
 		# -------- inquiry menu -----
-		tmp = QtGui.QAction(QtGui.QIcon(''),'Vertex',self)        
-		tmp.triggered.connect(self.vertexInquiry)
+		tmp = QtGui.QAction(QtGui.QIcon(''),'Cartesian cds of a vertex',self)        
+		tmp.triggered.connect(self.recCdsVertexInquiry)
 		mInqui.addAction(tmp)
+
+# fare inquiry cds geografiche
 
 		tmp = QtGui.QAction(QtGui.QIcon(''),'Vector',self)        
 		tmp.triggered.connect(self.vectorInquiry)
@@ -1005,7 +1064,9 @@ class MainWindow(QtGui.QMainWindow):
 		tmp.triggered.connect(self.todhunter_027b_supplementalTriangles_2)
 		mTodh.addAction(tmp)
 
-
+		tmp = QtGui.QAction(QtGui.QIcon(''),'solid angle',self)        
+		tmp.triggered.connect(self.euclid_XI_20_solidAngle)
+		mTodh.addAction(tmp)
 
 
 
@@ -1070,6 +1131,7 @@ class MainWindow(QtGui.QMainWindow):
 									# geo: rad,lat,lon
 									# rec: x,y,z
 									# int: gc1,gc2
+									# int2v: v1,v2
 									# itp: p1,p2,k
 									# pol:
 									#		sc,a,n
@@ -1189,6 +1251,16 @@ class MainWindow(QtGui.QMainWindow):
 		p = self.dbGetNextCod()
 		# salva i dati
 		self.points[p] = ['int',[gc1,gc2]]
+		return p
+
+	def dbAddIntersection2Vec(self,v1,v2):
+		"""
+			add an intersection of two vectors
+		"""
+		# preleva il codice disponibile
+		p = self.dbGetNextCod()
+		# salva i dati
+		self.points[p] = ['int2v',[v1,v2]]
 		return p
 
 	def dbGetPointSpherCds(self,p):
@@ -1314,6 +1386,36 @@ class MainWindow(QtGui.QMainWindow):
 						print 'polare: punto',a,'non in archivio'
 				else:
 					print 'intersezione: primo cerchio non valido'
+			elif type == 'int2v':
+#				print '====punto',p,type,par,'======'
+				u,v = par
+				# prende il primo vettore u = AB
+				a,b = u[0],u[1]
+				# prende il secondo vettore v = CD
+				c,d = v[0],v[1]
+				tmp = self.dbGetPointRectCds(a)
+				if tmp != -1:
+					xa,ya,za = tmp
+					tmp = self.dbGetPointRectCds(b)
+					if tmp != -1:
+						xb,yb,zb = tmp
+						tmp = self.dbGetPointRectCds(c)
+						if tmp != -1:
+							xc,yc,zc = tmp
+							tmp = self.dbGetPointRectCds(d)
+							if tmp != -1:
+								xd,yd,zd = tmp
+								# prepara i vettori
+								u = [xb-xa,yb-ya,zb-za]
+								v = [xd-xc,yd-yc,zd-zc]
+								U = [[xa,ya,za],u]
+								V = [[xc,yc,zc],v]
+								# calcola intersezione
+								tmp = intersection3Dvectors(U,V)
+								if tmp != -1:
+									x,y,z = tmp
+									print 'intersezione:',x,y,z
+									return x,y,z
 			else:
 				print 'tipo di punto',type,'non riconosciuto'
 		else:
@@ -1337,11 +1439,20 @@ class MainWindow(QtGui.QMainWindow):
 
 #	------- vettori -------------
 
+	def vectorExists(self,v):
+		"""
+			controlla l'esistenza del vettore v
+		"""
+		if v in self.vectors.keys():
+			return 1
+		else:
+			return 0
+
 	def dbAddVector(self,p1,p2):
 		"""
 			aggiunge un vettore
 		"""
-		self.vectors[p1,p2] = ['vec',[p1,p2]]
+		self.vectors[p1+p2] = ['vec',[p1,p2]]
 
 	def dbAddTangent(self,p,v1,v2):
 		"""
@@ -1360,33 +1471,33 @@ class MainWindow(QtGui.QMainWindow):
 				tmp = self.dbGetPointRectCds(a)
 				if tmp != -1:
 					xa,ya,za = tmp
-					print 'punto',a,xa,ya,za
+#					print 'punto',a,xa,ya,za
 					tmp = self.dbGetPointRectCds(b)
 					if tmp != -1:
 						xb,yb,zb = tmp
-						print 'punto',b,xb,yb,zb
+#						print 'punto',b,xb,yb,zb
 						return [xa,ya,za],[xb,yb,zb]
 			elif typ == 'tan':
 				p,a,b = par
 				tmp = self.dbGetPointRectCds(p)
 				if tmp != -1:
 					xp,yp,zp = tmp
-					print 'punto',p,xp,yp,zp
+#					print 'punto',p,xp,yp,zp
 					mp = math.sqrt(dotProduct([xp,yp,zp],[xp,yp,zp]))
 					tmp = self.dbGetPointRectCds(a)
 					if tmp != -1:
 						xa,ya,za = tmp
-						print 'punto',a,xa,ya,za	
+#						print 'punto',a,xa,ya,za	
 						tmp = self.dbGetPointRectCds(b)
 						if tmp != -1:
 							xb,yb,zb = tmp
-							print 'punto',b,xb,yb,zb
+#							print 'punto',b,xb,yb,zb
 							xv,yv,zv = xb-xa,yb-ya,zb-za
 							# piede della tangente in P sul vettore AB
 							k = mp**2/dotProduct([xp,yp,zp],[xv,yv,zv])
-							print mp**2,dotProduct([xp,yp,zp],[xv,yv,zv]),k
+#							print mp**2,dotProduct([xp,yp,zp],[xv,yv,zv]),k
 							xh,yh,zh = xa+k*(xb-xa),ya+k*(yb-ya),za+k*(zb-za)
-							print 'H',xh,yh,zh
+#							print 'H',xh,yh,zh
 							return [xp,yp,zp],[xh,yh,zh]
 			print 'vettore',ref,'inesistente'
 			return -1
@@ -1472,7 +1583,7 @@ class MainWindow(QtGui.QMainWindow):
 		tmp = self.dbGetVector(ref)
 		if tmp != -1:
 			[xa,ya,za],[xb,yb,zb] = tmp
-			ax.plot([xa,xb],[ya,yb],[za,zb],'r-',color=self.cRed)
+			ax.plot([xa,xb],[ya,yb],[za,zb],'r-',color=self.cViolet,linewidth=1.5)
 
 	def drawGreatCircle(self,ax,a,b):
 		"""
@@ -1489,7 +1600,7 @@ class MainWindow(QtGui.QMainWindow):
 #				print 'normale a AOB',xn,yn,zn
 				x,y,z = circle3D(self.myRad,[xa,ya,za],[xn,yn,zn],self.myNum)
 				# visualizzazione cerchio
-				ax.plot(x,y,z,color=self.cBlue,linewidth=1.0)
+				ax.plot(x,y,z,color=self.cBlue,linewidth=1.5)
 
 	def drawSmallCircle(self,ax,a,n):
 		"""
@@ -1723,6 +1834,34 @@ class MainWindow(QtGui.QMainWindow):
 						print 'vertice',b,'inesistente'
 				else:
 					print 'vertice',a,'inesistente'
+			else:
+				print "errore: numero di parametri inadeguato"
+
+	def twoVectorIntersection(self):
+		"""
+			gestisce l'intersezione, se esiste, di 2 vettori 3D
+		"""
+		dlg = genericDlg('Two vectors',['v1','v2'])
+		dlg.setValues(['',''])
+		dlg.show()
+		result = dlg.exec_()
+		if result:
+			tmp = dlg.getValues()
+			if len(tmp) == 2:
+				u,v = tmp
+				u,v = str(u),str(v)
+				# controlla i vettori
+				if u != v:
+					if self.vectorExists(u):
+						if self.vectorExists(v):
+							# salva l'intersezione
+							self.dbAddIntersection2Vec(u,v)
+						else:
+							print 'il vettore',v,'non esiste in archivio'
+					else:
+						print 'il vettore',u,'non esiste in archivio'
+				else:
+					print 'i vettori non possono coincidere'
 			else:
 				print "errore: numero di parametri inadeguato"
 
@@ -2004,9 +2143,9 @@ class MainWindow(QtGui.QMainWindow):
 
 #	-------- inquiry functions -----------
 
-	def vertexInquiry(self):
+	def recCdsVertexInquiry(self):
 		"""
-			dialogo per l'inquiry di un vertice
+			dialogo per l'inquiry delle coordinate cartesiane di un vertice
 		"""
 		dlg = genericDlg('A vertex',['P'])
 		dlg.setValues([''])
@@ -2017,17 +2156,25 @@ class MainWindow(QtGui.QMainWindow):
 			if len(tmp) == 1:
 				a = tmp.pop()
 				a = str(a)
+				"""
 				if a in self.points.keys():
 					lat,lon = self.points[a][0]
 					x,y,z = self.points[a][1]
+				"""
+				tmp = self.dbGetPointRectCds(a)
+				if tmp != -1:
+					x,y,z = tmp
 					print '------------vertex----------------'
 					print 'vertex',a
-					print 'spherical cds           %8.5f %8.5f' % (rad2sessad(lat),rad2sessad(lon))
 					print 'rectangular coordinates %7.3f %7.3f %7.3f' % (x,y,z)
 				else:
 					print 'vertice',a,'inesistente'
 			else:
 				print 'numero di parametri inadeguato'
+
+# inquiry cds geografiche
+#					print 'spherical cds           %8.5f %8.5f' % (rad2sessad(lat),rad2sessad(lon))
+
 
 	def vectorInquiry(self):
 		"""
@@ -2078,21 +2225,38 @@ class MainWindow(QtGui.QMainWindow):
 				a,b,c = tmp
 				a,b,c = str(a),str(b),str(c)
 #				print a,b,c
+				"""
 				if a in self.points.keys():
 					if b in self.points.keys():
 						if c in self.points.keys():
 							xa,ya,za = self.points[a][1]
 							xb,yb,zb = self.points[b][1]
 							xc,yc,zc = self.points[c][1]
+				"""
+				tmp = self.dbGetPointRectCds(a)
+				if tmp != -1:
+					xa,ya,za = tmp
+					tmp = self.dbGetPointRectCds(b)
+					if tmp != -1:
+						xb,yb,zb = tmp
+						tmp = self.dbGetPointRectCds(c)
+						if tmp != -1:
+							xc,yc,zc = tmp
 							ux,uy,uz = xa-xb,ya-yb,za-zb
 							vx,vy,vz = xc-xb,yc-yb,zc-zb
 							mu = math.sqrt(dotProduct([ux,uy,uz],[ux,uy,uz]))
-							mv = math.sqrt(dotProduct([vx,vy,vz],[vx,vy,vz]))
-							ang = math.acos(dotProduct([ux,uy,uz],[vx,vy,vz])/(mu*mv))
-							print '------------angle----------------'
-							print 'angle          %s-%s-%s' % (a,b,c)
-							print 'radianti       %8.5f' % (ang)
-							print 'gradi decimali %8.5f' % (rad2sessad(ang))
+							if mu != 0:
+								mv = math.sqrt(dotProduct([vx,vy,vz],[vx,vy,vz]))
+								if mv != 0:
+									ang = math.acos(dotProduct([ux,uy,uz],[vx,vy,vz])/(mu*mv))
+									print '------------angle----------------'
+									print 'angle          %s-%s-%s' % (a,b,c)
+									print 'radianti       %8.5f' % (ang)
+									print 'gradi decimali %8.5f' % (rad2sessad(ang))
+								else:
+									print 'vettore',c,b,'nullo'
+							else:
+								print 'vettore',a,b,'nullo'
 						else:
 							print 'vertice',c,'inesistente'
 					else:
@@ -3105,7 +3269,7 @@ BC, AC and AB, the triangles ABC and DEF are POLARS.
 Theorem:
 Let ABC a spherical triangle and DEF it's polar
 triangle, thus ABC is the polar triangle of DEF.
-Prof:
+Proof:
 D polar of BC imply DB and DC are quadrants,
 E polar of AC imply EA and EC are quadrants,
 F polar of AB imply FA and FB are quadrants,
@@ -3151,7 +3315,7 @@ Theorem:
 Let ABC and DEF two polar triangle, the sides og
 one are supplemental of the angles of the other;
 the angles the supplemental of the sides.
-Prof:
+Proof:
 Let G and H the intersection of great circles BA
 and BC with great circle DF; DH and FG are by
 definition quadrant, thus DH + FG = DF + GH = 2pi;
@@ -3211,7 +3375,7 @@ Proposition:
 The sides (angles) of the polar triangle are equal
 or supplemental of the angles (sides) of the
 primitive triangle;
-Prof:
+Proof:
 
 			'''
 		)
@@ -3257,6 +3421,59 @@ Prof:
 		# visualizza
 		self.redraw()
 
+	def euclid_XI_20_solidAngle(self):
+		QtGui.QMessageBox.information(
+			self,
+			'XI_20_solidAngle',
+			'''
+Proposition:
+In a solid angle defined by the three planes
+AOB, BOC, COA, the sum of any two angles
+AOB + BOC is greater than the third angle AOC ;
+Proof:
+If the angle AOC be less than or equal to either
+of the other angles the proposition is evident.
+If not, suppose it greater: take any point D in
+AC such that AOD = AOB, thus AB = AD.
+In plane triangle ABC we have AB+BC > AC = AD+DC,
+thus subtracting the same quantity AB = AD, we
+find BC > DC; from ??? we have BOC > DOC, thus
+AOB+BOC > AOB+DOC = AOD+DOC = AOC. 
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'Euclid\n Elements, book XI, proposition 20'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		xa,ya,za = pointSphericCds(self.myRad,lat,lon)
+		# genera il punto B
+		lat = sessad2rad(40.)
+		lon = sessad2rad(50.)
+		b = self.dbAddPointLatLon(lat,lon)
+		xb,yb,zb = pointSphericCds(self.myRad,lat,lon)
+		# genera il punto C
+		lat = sessad2rad(10.)
+		lon = sessad2rad(70.)
+		c = self.dbAddPointLatLon(lat,lon)
+		xc,yc,zc = pointSphericCds(self.myRad,lat,lon)
+		# genera il triangolo piano
+		self.dbAddVector(a,b)
+		self.dbAddVector(b,c)
+		self.dbAddVector(c,a)
+		# genera il punto D tale che AB=AD
+		mab = math.sqrt(dotProduct([xa-xb,ya-yb,za-zb],[xa-xb,ya-yb,za-zb]))
+		print 'AB:',mab
+		mac = math.sqrt(dotProduct([xc-xa,yc-ya,zc-za],[xc-xa,yc-ya,zc-za]))
+		print 'AC:',mac
+		l = self.dbAddInterpolation(a,c,mab/mac)
+		self.dbAddVector('O',l)
+		self.dbAddVector(b,l)
+		# visualizza
+		self.redraw()
 
 
 
@@ -3309,62 +3526,25 @@ Prof:
 
 	def prova(self):
 
-
-
-#	def todhunter_027b_supplementalTriangles(self):
-		QtGui.QMessageBox.information(
-			self,
-			'027b_supplementalTriangles',
-			'''
-Proposition:
-The sides (angles) of the polar triangle are equal
-or supplemental of the angles (sides) of the
-primitive triangle;
-Prof:
-
-			'''
-		)
-		# pulisce tutto
-		self.dbClearAll()
-		# titolo
-		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 26, pag. 13'
 		# genera il punto A
 		lat = sessad2rad(10.)
-		lon = sessad2rad(20.)
+		lon = sessad2rad(0.)
 		a = self.dbAddPointLatLon(lat,lon)
 		# genera il punto B
-		lat = sessad2rad(40.)
-		lon = sessad2rad(70.)
+		lat = sessad2rad(70.)
+		lon = sessad2rad(0.)
 		b = self.dbAddPointLatLon(lat,lon)
+		# origine
+		c = 'O'
 		# genera il punto C
-		lat = sessad2rad(60.)
-		lon = sessad2rad(30.)
-		c = self.dbAddPointLatLon(lat,lon)
-		# polari
-		a1 = self.dbAddPolar('gc',b,c)
-		b1 = self.dbAddPolar('gc',a,c)
-		c1 = self.dbAddPolar('gc',a,b)
-		# genera il triangolo
-		self.dbAddArc(str(a),str(b))
-		self.dbAddArc(str(b),str(c))
-		self.dbAddArc(str(a),str(c))
-		# polare
-		self.dbAddArc(str(a1),str(b1))
-		self.dbAddArc(str(b1),str(c1))
-		self.dbAddArc(str(a1),str(c1))
-		# great circles
-		typ = 'gc'
-		self.circles[typ+str(a)+str(b)] = [typ,a,b]
-		self.circles[typ+str(a)+str(c)] = [typ,a,c]
-		self.circles[typ+str(b1)+str(c1)] = [typ,b1,c1]
-		# intersezioni
-		c1 = 'gc'+b1+c1
-		c2 = 'gc'+a+b
-		l = self.dbAddIntersection(c1,c2)
-		c2 = 'gc'+a+c
-		m = self.dbAddIntersection(c1,c2)
-		# visualizza
-		self.redraw()
+		lat = sessad2rad(30.)
+		lon = sessad2rad(0.)
+		d = self.dbAddPointLatLon(lat,lon)
+
+		self.dbAddVector(a,b)
+		self.dbAddVector(c,d)
+
+
 
 
 
