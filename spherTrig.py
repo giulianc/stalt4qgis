@@ -23,7 +23,7 @@ spherTrig.py
 A visual tool for Spherical Trigonometry Education
 """
 vers = 'E-0.00'
-build_date = '2014-06-06'
+build_date = '2014-06-12'
 author = 'giuliano curti'
 mail = 'giulianc51 at gmail dot com'
 copyright = '2013-2018 giuliano curti'
@@ -49,6 +49,10 @@ dbAddCircle()
 	usare ma fare attenzione che alcuni cerchi hanno 1 parametro ed altri due
 dbGetPointRectCds())
 	cambiare codice 'int' in 'int2c'
+numerazione vertici
+	si potrebbe lasciare libera l'etichettatura dei vertici gestendo
+	una lista dei caratteri dell'alfabeto da cui prelevare la label
+	scelta e reinserendola quando l'elemento viene cancellato
 vettori
 	attenzione: cambiata la chiave, ora è AB al posto di A,B
 	aggiungere i tipi
@@ -82,15 +86,6 @@ gestione archi
 	controllo che ci siano almeno 2(+1) punti
 todhunter
 	Todhunter_22 convenzione lunghezza archi
-	Todhunter 28 principle of duality (p.14)
-	Todhunter_29a a+c>c (p.14)
-	Todhunter_29b a>c-b (p.14)
-	Todhunter_30 a+b+c<2pi (p.15)
-	Todhunter_32 A+B+C>2pi (p.15)
-	Todhunter_33 controllare
-	Todhunter_34 similitude criteria (p.17)
-	Todhunter_35 isoscele spherical triangles A (p.17)
-	Todhunter_36 isoscele spherical triangles B (p.17)
 	Todhunter_47 controllare
 		verticale da punto a vettore (ci dovrebbe essere)
 		risolvere sistema 3 incognite (ci dovrebbe essere)
@@ -1064,9 +1059,55 @@ class MainWindow(QtGui.QMainWindow):
 		tmp.triggered.connect(self.todhunter_027b_supplementalTriangles_2)
 		mTodh.addAction(tmp)
 
-		tmp = QtGui.QAction(QtGui.QIcon(''),'solid angle',self)        
-		tmp.triggered.connect(self.euclid_XI_20_solidAngle)
+		tmp = QtGui.QAction(QtGui.QIcon(''),'Euclid solid angle 1',self)        
+		tmp.triggered.connect(self.euclid_XI_20_solidAngle1)
 		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'028 principle of duality',self)        
+		tmp.triggered.connect(self.todhunter_028_dualityPrinciple)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'029a two arcs are greater than the third',self)        
+		tmp.triggered.connect(self.todhunter_029a_twoArcsGreaterThanThird)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'029b any arc is greater than the difference',self)        
+		tmp.triggered.connect(self.todhunter_029b_anyArcGreaterThanDifference)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'Euclid solid angle 2',self)        
+		tmp.triggered.connect(self.euclid_XI_21_solidAngle2)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'030 sum of the arcs',self)        
+		tmp.triggered.connect(self.todhunter_030_sumOfTheArcs)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'032 sum of the angles',self)        
+		tmp.triggered.connect(self.todhunter_032_sumOfTheAngles)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'033 antipodal triangles',self)        
+		tmp.triggered.connect(self.todhunter_033_antipodalTriangles)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'034 congruence criteria',self)        
+		tmp.triggered.connect(self.todhunter_034_triangleCongruence)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'035 isoscele triangle 1',self)        
+		tmp.triggered.connect(self.todhunter_035_isosceleTriangle1)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'036 isoscele triangle 2',self)        
+		tmp.triggered.connect(self.todhunter_036_isosceleTriangle2)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'037 greater angle greater side',self)        
+		tmp.triggered.connect(self.todhunter_037_greaterAngleGreaterSide)
+		mTodh.addAction(tmp)
+
+
 
 
 
@@ -2129,12 +2170,11 @@ class MainWindow(QtGui.QMainWindow):
 				a,b,c = tmp
 				a,b,c = str(a),str(b),str(c)
 #				print a,b,c
-				xa,ya,za = self.points[a][1]
-				xb,yb,zb = self.points[b][1]
-				xc,yc,zc = self.points[c][1]
-				a1 = self.dbAddPointRect(-xa,-ya,-za)
-				b1 = self.dbAddPointRect(-xb,-yb,-zb)
-				c1 = self.dbAddPointRect(-xc,-yc,-zc)
+				# antipodal vertices
+				a1 = self.dbAddAntipodalPoint(a)
+				b1 = self.dbAddAntipodalPoint(b)
+				c1 = self.dbAddAntipodalPoint(c)
+				# triangle
 				self.dbAddArc(str(a1),str(b1))
 				self.dbAddArc(str(b1),str(c1))
 				self.dbAddArc(str(c1),str(a1))
@@ -3421,10 +3461,10 @@ Proof:
 		# visualizza
 		self.redraw()
 
-	def euclid_XI_20_solidAngle(self):
+	def euclid_XI_20_solidAngle1(self):
 		QtGui.QMessageBox.information(
 			self,
-			'XI_20_solidAngle',
+			'XI_20_solidAngle1',
 			'''
 Proposition:
 In a solid angle defined by the three planes
@@ -3474,6 +3514,447 @@ AOB+BOC > AOB+DOC = AOD+DOC = AOC.
 		self.dbAddVector(b,l)
 		# visualizza
 		self.redraw()
+
+	def todhunter_028_dualityPrinciple(self):
+		QtGui.QMessageBox.information(
+			self,
+			'028_dualityPrinciple',
+			'''
+Proposition:
+Any theorem remain true when the angles are changed
+into the supplements of the corresponding sides and
+the sides into the supplements of the corresponding
+angles.
+			'''
+		)
+
+	def todhunter_029a_twoArcsGreaterThanThird(self):
+		QtGui.QMessageBox.information(
+			self,
+			'029a_twoArcsGreaterThanThird',
+			'''
+Theorem:
+In a spherical triangle any two sides are greater than
+the third.
+Proof:
+By Euclid XI 20 any two plane angles are greater than
+the third angle;  because the sides are proportional
+to angles, the thesis follows.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 29, pag. 14'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(30.)
+		lon = sessad2rad(30.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(0.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# greate circle
+		self.circles['gc'+str(a)+str(b)] = ['gc',str(a),str(b)]
+		self.circles['gc'+str(b)+str(c)] = ['gc',str(b),str(c)]
+		self.circles['gc'+str(c)+str(a)] = ['gc',str(c),str(a)]
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# visualizza
+		self.redraw()
+
+	def todhunter_029b_anyArcGreaterThanDifference(self):
+		QtGui.QMessageBox.information(
+			self,
+			'029b_anyArcGreaterThanDifference',
+			'''
+Theorem:
+In a spherical triangle any side is greater than
+the difference of the other two.
+Proof:
+By 029a any two sides are greater than the third;
+from a + b > c follows a > c - b.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 29, pag. 14'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(30.)
+		lon = sessad2rad(30.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(0.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# greate circle
+		self.circles['gc'+str(a)+str(b)] = ['gc',str(a),str(b)]
+		self.circles['gc'+str(b)+str(c)] = ['gc',str(b),str(c)]
+		self.circles['gc'+str(c)+str(a)] = ['gc',str(c),str(a)]
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# visualizza
+		self.redraw()
+
+	def euclid_XI_21_solidAngle2(self):
+		QtGui.QMessageBox.information(
+			self,
+			'XI_21_solidAngle2',
+			'''
+Proposition:
+The sum of all the plane angles forming a solid angle
+is less than four right angles.
+Proof:
+Let we take a solid angle O formed by N planes 
+intersected with a one more plane forming the vertices
+A, B, C, ....; consider the solid angle in vertex K, we
+have by Euclid XI 20 that OKH + OKJ > HKJ; summing up 
+all vertices we have:
+sum > interior angles of Ngon = (N-2)pi.
+Because all the angles of one face equal pi, we have:
+sum of all plane angles = Npi, thus the sum of the plane
+angle around the vertex O = Npi - previous sum < Npi +
+- (N-2)pi = 2pi = 4(pi/2).
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'Euclid\n Elements, book XI, proposition 21\n(Symbolic figure)'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(40.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(30.)
+		lon = sessad2rad(20.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(30.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# genera il punto d
+		lat = sessad2rad(50.)
+		lon = sessad2rad(50.)
+		d = self.dbAddPointLatLon(lat,lon)
+		# genera il punto e
+		lat = sessad2rad(40.)
+		lon = sessad2rad(70.)
+		e = self.dbAddPointLatLon(lat,lon)
+		# vectors
+		self.dbAddVector(a,b)
+		self.dbAddVector(b,c)
+		self.dbAddVector(c,d)
+		self.dbAddVector(d,e)
+		self.dbAddVector(e,a)
+		# visualizza
+		self.redraw()
+
+	def todhunter_030_sumOfTheArcs(self):
+		QtGui.QMessageBox.information(
+			self,
+			'030_sumOfTheArcs',
+			'''
+Theorem:
+The sum of the arcs of the spherical triangle is
+less then the circonference of a great circle.
+Proof:
+By Euclid XI 21 the sum of the angles:
+a/R + b/R + c/R < 2pi
+thus:
+a + b + c < 2Rpi.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 30, pag. 15'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(30.)
+		lon = sessad2rad(30.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(0.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# greate circle
+		self.circles['gc'+str(a)+str(b)] = ['gc',str(a),str(b)]
+		self.circles['gc'+str(b)+str(c)] = ['gc',str(b),str(c)]
+		self.circles['gc'+str(c)+str(a)] = ['gc',str(c),str(a)]
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# visualizza
+		self.redraw()
+
+	def todhunter_032_sumOfTheAngles(self):
+		QtGui.QMessageBox.information(
+			self,
+			'032_sumOfTheAngles',
+			'''
+Theorem:
+The sum of the three angles of the spherical triangle
+is greather than 2(pi/2) and less than 6(pi/2).
+Proof:
+By art. 30 the sum of the arcs of the polar triangle
+a'+b'+c' < 2pi;
+by duality we have:
+a'+b'+c' = pi-A + pi-B + pi-C
+         = 3pi - (A+B+C)
+         < 2pi;
+thus:
+A+B+C > pi = 2(pi/2).
+Since every angle is less than pi, we have:
+A+B+C < 3pi = 6(pi/2).
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 32, pag. 15'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(30.)
+		lon = sessad2rad(30.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(0.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# greate circle
+		self.circles['gc'+str(a)+str(b)] = ['gc',str(a),str(b)]
+		self.circles['gc'+str(b)+str(c)] = ['gc',str(b),str(c)]
+		self.circles['gc'+str(c)+str(a)] = ['gc',str(c),str(a)]
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# visualizza
+		self.redraw()
+
+	def todhunter_033_antipodalTriangles(self):
+		QtGui.QMessageBox.information(
+			self,
+			'033_antipodalTriangles',
+			'''
+Let ABC and DEF two antipodal triangle, we have:
+- the plane angles of solid angle O are the same
+- the distance of the vertices from O is the same
+- the sides are thus the same;
+but the triangles are not superposable because
+the corrisponding vertices are in opposite order.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 33, pag. 16'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(30.)
+		lon = sessad2rad(30.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(0.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# antipodal vertices
+		d = self.dbAddAntipodalPoint(a)
+		e = self.dbAddAntipodalPoint(b)
+		f = self.dbAddAntipodalPoint(c)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		self.dbAddArc(str(d),str(e))
+		self.dbAddArc(str(e),str(f))
+		self.dbAddArc(str(f),str(d))
+		# visualizza
+		self.redraw()
+
+	def todhunter_034_triangleCongruence(self):
+		QtGui.QMessageBox.information(
+			self,
+			'034_triangleCongruence',
+			'''
+Mutuating the concept of triangle congruence from the
+plane geometry we have that two spherical triangles
+are congruent when:
+1) two sides and the included angle are equals
+2) two angle and the included side are equals
+3) three sides are equals
+4) three angles are equals.
+The criteria 1), 2) and 3) are corresponding with
+the criteria of plane geometry; the fourth criterium
+is new.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 34, pag. 16'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(30.)
+		lon = sessad2rad(30.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(0.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# antipodal vertices
+		d = self.dbAddAntipodalPoint(a)
+		e = self.dbAddAntipodalPoint(b)
+		f = self.dbAddAntipodalPoint(c)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		self.dbAddArc(str(d),str(e))
+		self.dbAddArc(str(e),str(f))
+		self.dbAddArc(str(f),str(d))
+		# visualizza
+		self.redraw()
+
+	def todhunter_035_isosceleTriangle1(self):
+		QtGui.QMessageBox.information(
+			self,
+			'035_isosceleTriangle1',
+			'''
+If the triangle have two equals sides, it have two
+angles also equals.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 36, pag. 17'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(10.)
+		lon = sessad2rad(60.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(50.)
+		lon = sessad2rad(40.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# visualizza
+		self.redraw()
+
+	def todhunter_036_isosceleTriangle2(self):
+		QtGui.QMessageBox.information(
+			self,
+			'036_isosceleTriangle2',
+			'''
+If two angles of the triangle are equals, the opposite
+sides are equals.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 36, pag. 17'
+		# genera il punto A
+		lat = sessad2rad(60.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(60.)
+		lon = sessad2rad(60.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(10.)
+		lon = sessad2rad(40.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# visualizza
+		self.redraw()
+
+	def todhunter_037_greaterAngleGreaterSide(self):
+		QtGui.QMessageBox.information(
+			self,
+			'037_greaterAngleGreaterSide',
+			'''
+Theorem:
+Between two sides, the greater is opposite to the
+greater angle.
+Proof:
+Let the angle B greater than A, produce the vertex D
+such that the angle ABD is equal to A, thus the sides
+AB = BD;
+By art. 29 the sum BD+DC is greater than the side a,
+thus b = AC = AD+DC = BD+DC > a.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 37, pag. 18'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(60.)
+		lon = sessad2rad(40.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(10.)
+		lon = sessad2rad(70.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# genera il punto d
+		lat = sessad2rad(10.)
+		lon = sessad2rad(60.)
+		d = self.dbAddPointLatLon(lat,lon)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		self.dbAddArc(str(b),str(d))
+		# visualizza
+		self.redraw()
+
+
+
+
+
 
 
 
@@ -3525,6 +4006,9 @@ AOB+BOC > AOB+DOC = AOD+DOC = AOC.
 #	--- routine di prova-------
 
 	def prova(self):
+
+
+		return
 
 		# genera il punto A
 		lat = sessad2rad(10.)
