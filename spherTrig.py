@@ -84,6 +84,7 @@ gestione cerchi
 	controllo che ci siano almeno 2(+1) punti
 gestione archi
 	controllo che ci siano almeno 2(+1) punti
+valutare lo shading della sfera
 todhunter
 	Todhunter_22 convenzione lunghezza archi
 	Todhunter_47 controllare
@@ -936,7 +937,9 @@ class MainWindow(QtGui.QMainWindow):
 		tmp.triggered.connect(self.recCdsVertexInquiry)
 		mInqui.addAction(tmp)
 
-# fare inquiry cds geografiche
+		tmp = QtGui.QAction(QtGui.QIcon(''),'Geographic cds of a vertex',self)        
+		tmp.triggered.connect(self.geoCdsVertexInquiry)
+		mInqui.addAction(tmp)
 
 		tmp = QtGui.QAction(QtGui.QIcon(''),'Vector',self)        
 		tmp.triggered.connect(self.vectorInquiry)
@@ -1103,10 +1106,25 @@ class MainWindow(QtGui.QMainWindow):
 		tmp.triggered.connect(self.todhunter_036_isosceleTriangle2)
 		mTodh.addAction(tmp)
 
-		tmp = QtGui.QAction(QtGui.QIcon(''),'037 greater angle greater side',self)        
+		tmp = QtGui.QAction(QtGui.QIcon(''),'037 greater angle => greater side',self)        
 		tmp.triggered.connect(self.todhunter_037_greaterAngleGreaterSide)
 		mTodh.addAction(tmp)
 
+		tmp = QtGui.QAction(QtGui.QIcon(''),'038_greater side => greaterAngle',self)        
+		tmp.triggered.connect(self.todhunter_038_greaterSideGreaterAngle)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'042 cosine of angles',self)        
+		tmp.triggered.connect(self.todhunter_042_cosineOfAngle)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'043 generalization 1',self)        
+		tmp.triggered.connect(self.todhunter_043_generalization1)
+		mTodh.addAction(tmp)
+
+		tmp = QtGui.QAction(QtGui.QIcon(''),'043 generalization 2',self)        
+		tmp.triggered.connect(self.todhunter_043_generalization2)
+		mTodh.addAction(tmp)
 
 
 
@@ -1174,6 +1192,7 @@ class MainWindow(QtGui.QMainWindow):
 									# int: gc1,gc2
 									# int2v: v1,v2
 									# itp: p1,p2,k
+									# tan: refer. al vettore tangente
 									# pol:
 									#		sc,a,n
 									#		gc,a,b
@@ -1306,17 +1325,27 @@ class MainWindow(QtGui.QMainWindow):
 
 	def dbGetPointSpherCds(self,p):
 		"""
-		 restituisce le coordinate sferiche del punto p
+			restituisce le coordinate sferiche del punto p
+			se è di tipo lat/lon restituisce immediatamente i dati
+			altrimenti calcola le coordinate cartesiane e ricalcola
+			quelle sferiche
 		"""
 		if p in self.points.keys():
 #			print p,'esiste',
 			type,par = self.points[p]
 			if type == 'geo':
-#				print 'in cds sferiche'
+#				print 'in cds sferiche',par
 				return par
-			elif type == 'rec':
-#				print 'in cds cartesiane'
-				return pointRectCds(par)
+			else:
+				tmp = self.dbGetPointRectCds(p)
+				if tmp != -1:
+					x,y,z = tmp
+#					print 'in cds cartesiane',x,y,z
+					r,lat,lon = pointRectCds(x,y,z)
+#					print r,lat,lon
+					return r,lat,lon
+				else:
+					return -1
 		else:
 			print 'NB:',p,'NON esiste in archivio'
 			return -1
@@ -1430,33 +1459,40 @@ class MainWindow(QtGui.QMainWindow):
 			elif type == 'int2v':
 #				print '====punto',p,type,par,'======'
 				u,v = par
-				# prende il primo vettore u = AB
-				a,b = u[0],u[1]
-				# prende il secondo vettore v = CD
-				c,d = v[0],v[1]
-				tmp = self.dbGetPointRectCds(a)
+				tmp = self.dbGetVector(u)
 				if tmp != -1:
-					xa,ya,za = tmp
-					tmp = self.dbGetPointRectCds(b)
+					[xa,ya,za],[xb,yb,zb] = tmp
+					print 'a',xa,ya,za
+					print 'b',xb,yb,zb
+					tmp = self.dbGetVector(v)
 					if tmp != -1:
-						xb,yb,zb = tmp
-						tmp = self.dbGetPointRectCds(c)
+						[xc,yc,zc],[xd,yd,zd] = tmp
+						print 'c',xc,yc,zc
+						print 'd',xd,yd,zd
+						# prepara i vettori
+						u = [xb-xa,yb-ya,zb-za]
+						v = [xd-xc,yd-yc,zd-zc]
+						U = [[xa,ya,za],u]
+						V = [[xc,yc,zc],v]
+						# calcola intersezione
+						tmp = intersection3Dvectors(U,V)
 						if tmp != -1:
-							xc,yc,zc = tmp
-							tmp = self.dbGetPointRectCds(d)
-							if tmp != -1:
-								xd,yd,zd = tmp
-								# prepara i vettori
-								u = [xb-xa,yb-ya,zb-za]
-								v = [xd-xc,yd-yc,zd-zc]
-								U = [[xa,ya,za],u]
-								V = [[xc,yc,zc],v]
-								# calcola intersezione
-								tmp = intersection3Dvectors(U,V)
-								if tmp != -1:
-									x,y,z = tmp
-									print 'intersezione:',x,y,z
-									return x,y,z
+							x,y,z = tmp
+							print 'intersezione:',x,y,z
+							return x,y,z
+						else:
+							print 'i vettori',u,v,'non hanno intersezione'
+					else:
+						print 'vettore',v,'inesistente'
+				else:
+					print 'vettore',u,'inesistente'	
+			elif type == 'tan':
+				tmp = self.dbGetVector(par)
+				if tmp != -1:
+					[xa,ya,za],[xb,yb,zb] = tmp
+					return xb,yb,zb
+				else:
+					return -1
 			else:
 				print 'tipo di punto',type,'non riconosciuto'
 		else:
@@ -1498,8 +1534,14 @@ class MainWindow(QtGui.QMainWindow):
 	def dbAddTangent(self,p,v1,v2):
 		"""
 			aggiunge una tangente ai vettori
+			ed ai vertici
 		"""
 		self.vectors[p+v1+v2] = ['tan',[p,v1,v2]]
+		# preleva il codice disponibile
+		a = self.dbGetNextCod()
+		# salva i dati
+		self.points[a] = ['tan',p+v1+v2]
+		return a
 
 	def dbGetVector(self,ref):
 		"""
@@ -2196,11 +2238,6 @@ class MainWindow(QtGui.QMainWindow):
 			if len(tmp) == 1:
 				a = tmp.pop()
 				a = str(a)
-				"""
-				if a in self.points.keys():
-					lat,lon = self.points[a][0]
-					x,y,z = self.points[a][1]
-				"""
 				tmp = self.dbGetPointRectCds(a)
 				if tmp != -1:
 					x,y,z = tmp
@@ -2212,9 +2249,30 @@ class MainWindow(QtGui.QMainWindow):
 			else:
 				print 'numero di parametri inadeguato'
 
-# inquiry cds geografiche
-#					print 'spherical cds           %8.5f %8.5f' % (rad2sessad(lat),rad2sessad(lon))
-
+	def geoCdsVertexInquiry(self):
+		"""
+			inquiry cds geografiche
+		"""
+		dlg = genericDlg('A vertex',['P'])
+		dlg.setValues([''])
+		dlg.show()
+		result = dlg.exec_()
+		if result:
+			tmp = dlg.getValues()
+			if len(tmp) == 1:
+				a = tmp.pop()
+				a = str(a)
+				tmp = self.dbGetPointSpherCds(a)
+				if tmp != -1:
+					r,lat,lon = tmp
+#					print r,lat,lon
+					print '------------vertex----------------'
+					print 'vertex',a
+					print 'spherical cds %8.5f %8.5f %8.5f' % (r,rad2sessad(lat),rad2sessad(lon))
+				else:
+					print 'vertice',a,'inesistente'
+			else:
+				print 'numero di parametri inadeguato'
 
 	def vectorInquiry(self):
 		"""
@@ -3951,11 +4009,183 @@ thus b = AC = AD+DC = BD+DC > a.
 		# visualizza
 		self.redraw()
 
+	def todhunter_038_greaterSideGreaterAngle(self):
+		QtGui.QMessageBox.information(
+			self,
+			'037_greaterAngleGreaterSide',
+			'''
+Theorem:
+Between two angles, the greater is opposite to the
+greater side.
+Proof:
+Let the side AC greater than BC;
+angle B cannot be less than A otherwise, by art. 37,
+the opposite side AC be less than BC;
+angle B cannot be equal to A otherwise, by art. 36,
+the opposite side AC be equal to BC, thus  the angle B
+is greater than A.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 38, pag. 18'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(60.)
+		lon = sessad2rad(60.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(10.)
+		lon = sessad2rad(70.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# visualizza
+		self.redraw()
 
+	def todhunter_042_cosineOfAngle(self):
+		QtGui.QMessageBox.information(
+			self,
+			'042_cosineOfAngle',
+			'''
+We have:
+DE^2 = BD^2 + BE^2 + 2BD*BE*cosB and
+DE^2 = OD^2 + OE^2 - 2OD*DE*cosb;
+subtracting and substituting
+OD^2 = OB^2 + BD^2 and OE^2 = OB^2 + BE^2
+we have:
+cosb = (OB/OD)(OB/OE)+(BD/OD)(BE/OE)cosB
+     = cosa*cosc + sina*sinc*cosB.
+Or in another form:
+cosB = (cosb - cosa*cosc)/(sina*sinc).
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 42, pag. 21'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(20.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(60.)
+		lon = sessad2rad(40.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(10.)
+		lon = sessad2rad(70.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		# tangents
+		d = self.dbAddTangent(b,'O',a)
+		e = self.dbAddTangent(b,'O',c)
+		# vector
+		self.dbAddVector(d,e)
+		# visualizza
+		self.redraw()
 
+	def todhunter_043_generalization1(self):
+		QtGui.QMessageBox.information(
+			self,
+			'043_generalization1',
+			'''
+The previous result is valid in the case the sides
+wich contains the angle B are less than quadrants;
+suppose tha a side, let AB = c, be greater, thus
+we have:
+b' = CD = pi - b,
+c' = BD = pi - c,
+B' = pi - B,
+cosb' = cos(pi-b) = -cosb
+      = cosa*cosc' + sina*sinc'*cosB'
+      = cosa*cos(pi-c) + sina*sin(pi-c)*cos(pi-B)
+      = -cosa*cosc - sina*sinc*cosB
+that is:
+cosb = cosa*cosc + sina*sinc*cosB.
+(Note: the Author want to demonstrate that the cosine
+law is valid for triangles with sides greater than
+quadrants but the colunar triangle also have one side
+greater than quadrant, thus he use the thesis before
+being prooved). 
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 43, pag. 22'
+		# genera il punto A
+		lat = sessad2rad(10.)
+		lon = sessad2rad(10.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(40.)
+		lon = sessad2rad(120.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(20.)
+		lon = sessad2rad(70.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# antipodal of A
+		d = self.dbAddAntipodalPoint(a)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		self.dbAddArc(str(d),str(b))
+		self.dbAddArc(str(d),str(c))
+		# visualizza
+		self.redraw()
 
-
-
+	def todhunter_043_generalization2(self):
+		QtGui.QMessageBox.information(
+			self,
+			'043_generalization2',
+			'''
+In the case both sides wich contains the angle B
+are greater than quadrants, we have:
+a' = DC = pi - a,
+c' = DA = pi - c,
+cosb = cosa'*cosc' + sina'*sinc'*cosB
+      = cos(pi-a)*cos(pi-c) + sin(pi-a)*sin(pi-c)*cos(pi-B)
+      = cosa*cosc + sina*sinc*cosB.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 43, pag. 22'
+		# genera il punto A
+		lat = sessad2rad(-10.)
+		lon = sessad2rad(-10.)
+		a = self.dbAddPointLatLon(lat,lon)
+		# genera il punto B
+		lat = sessad2rad(60.)
+		lon = sessad2rad(70.)
+		b = self.dbAddPointLatLon(lat,lon)
+		# genera il punto c
+		lat = sessad2rad(-30.)
+		lon = sessad2rad(40.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# antipodal of B
+		d = self.dbAddAntipodalPoint(b)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		self.dbAddArc(str(d),str(a))
+		self.dbAddArc(str(d),str(c))
+		# visualizza
+		self.redraw()
 
 
 
@@ -4007,31 +4237,46 @@ thus b = AC = AD+DC = BD+DC > a.
 
 	def prova(self):
 
-
-		return
-
+#	def todhunter_043_generalization2(self):
+		QtGui.QMessageBox.information(
+			self,
+			'043_generalization2',
+			'''
+In the case both sides wich contains the angle B
+are greater than quadrants, we have:
+a' = DC = pi - a,
+c' = DA = pi - c,
+cosb = cosa'*cosc' + sina'*sinc'*cosB
+      = cos(pi-a)*cos(pi-c) + sin(pi-a)*sin(pi-c)*cos(pi-B)
+      = cosa*cosc + sina*sinc*cosB.
+			'''
+		)
+		# pulisce tutto
+		self.dbClearAll()
+		# titolo
+		self.myTitle = 'I.Todhunter J.G.Leathem\n Spherical Trigonometry\n McMillan, London 1914, art. 43, pag. 22'
 		# genera il punto A
-		lat = sessad2rad(10.)
-		lon = sessad2rad(0.)
+		lat = sessad2rad(-10.)
+		lon = sessad2rad(-10.)
 		a = self.dbAddPointLatLon(lat,lon)
 		# genera il punto B
-		lat = sessad2rad(70.)
-		lon = sessad2rad(0.)
+		lat = sessad2rad(60.)
+		lon = sessad2rad(70.)
 		b = self.dbAddPointLatLon(lat,lon)
-		# origine
-		c = 'O'
-		# genera il punto C
-		lat = sessad2rad(30.)
-		lon = sessad2rad(0.)
-		d = self.dbAddPointLatLon(lat,lon)
-
-		self.dbAddVector(a,b)
-		self.dbAddVector(c,d)
-
-
-
-
-
+		# genera il punto c
+		lat = sessad2rad(-30.)
+		lon = sessad2rad(40.)
+		c = self.dbAddPointLatLon(lat,lon)
+		# antipodal of B
+		d = self.dbAddAntipodalPoint(b)
+		# arcs
+		self.dbAddArc(str(a),str(b))
+		self.dbAddArc(str(b),str(c))
+		self.dbAddArc(str(c),str(a))
+		self.dbAddArc(str(d),str(a))
+		self.dbAddArc(str(d),str(c))
+		# visualizza
+		self.redraw()
 
 
 # ======================= runtime =================================
